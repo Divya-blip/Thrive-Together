@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThriveTogether - Autism-Friendly Events</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@dfinity/agent@0.19.2/lib/cjs/index.js"></script>
+    <script src="https://unpkg.com/@dfinity/auth-client@0.19.2/lib/cjs/index.js"></script>
+    <style>
+        :root {
+            /* Updated to more peaceful, calming colors */
+            --background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%);
+            --foreground: #1f2937;
+            --primary: #0ea5e9;
+            --primary-foreground: #ffffff;
+            --secondary: #10b981;
+            --accent: #8b5cf6;
+            --border: #e5e7eb;
+            --card: #ffffff;
+            --peaceful-mint: #f0fdfa;
+            --soft-blue: #dbeafe;
+            --warm-cream: #fefce8;
+        }
+        
+        body {
+            /* Added peaceful gradient background */
+            background: var(--background);
+            color: var(--foreground);
+            font-family: 'Work Sans', 'Open Sans', sans-serif;
+            min-height: 100vh;
+        }
+        
+        /* Added floating cloud animations for peaceful atmosphere */
+        .floating-clouds {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            animation: float 20s infinite linear;
+        }
+        
+        .cloud:before, .cloud:after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+        }
+        
+        .cloud1 {
+            width: 100px;
+            height: 40px;
+            top: 20%;
+            animation-delay: 0s;
+        }
+        
+        .cloud2 {
+            width: 80px;
+            height: 30px;
+            top: 40%;
+            animation-delay: -10s;
+        }
+        
+        .cloud3 {
+            width: 120px;
+            height: 50px;
+            top: 60%;
+            animation-delay: -5s;
+        }
+        
+        @keyframes float {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(calc(100vw + 100px)); }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--primary-foreground);
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--foreground);
+        }
+        
+        .text-primary {
+            color: var(--primary);
+        }
+        
+        .border-primary {
+            border-color: var(--primary);
+        }
+        
+        .bg-primary {
+            background-color: var(--primary);
+        }
+        
+        .bg-secondary {
+            background-color: var(--secondary);
+        }
+        
+        /* Enhanced card styling with peaceful colors */
+        .peaceful-card {
+            background: linear-gradient(135deg, var(--peaceful-mint), var(--soft-blue));
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .security-overlay {
+          position: relative;
+            top: 50px;
+            left: 0;
+            right: 0;
+            bottom:50px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .security-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+        
+            width: 90%;
+        }
+        
+        /* Added file upload styling */
+        .file-upload-area {
+            border: 2px dashed var(--primary);
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            background: var(--soft-blue);
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-area:hover {
+            background: var(--peaceful-mint);
+            border-color: var(--secondary);
+        }
+        
+        .file-upload-area.dragover {
+            background: var(--warm-cream);
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Added floating clouds for peaceful atmosphere -->
+    <div class="floating-clouds">
+        <div class="cloud cloud1"></div>
+        <div class="cloud cloud2"></div>
+        <div class="cloud cloud3"></div>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="authModal" class="security-overlay hidden">
+        <div class="security-modal">
+            <h2 class="text-2xl font-bold mb-4 text-center">Welcome to ThriveTogether</h2>
+            <div id="loginForm">
+                <h3 class="text-lg font-semibold mb-4">Sign In</h3>
+                <p class="text-sm text-gray-600 mb-4">Secure, private authentication for your family's safety</p>
+                <button id="icLoginBtn" class="w-full btn-primary py-3 px-4 rounded-lg font-medium transition-all duration-300">
+                    Sign In with IC Identity
+                </button>
+                <p class="text-center mt-4 text-sm">
+                    <button id="showSignupBtn" class="text-primary hover:underline">New user? Create account</button>
+                </p>
+            </div>
+            <div id="signupForm" class="hidden">
+                <h3 class="text-lg font-semibold mb-4">Create Account</h3>
+                <form id="signupFormData">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Parent/Guardian Name</label>
+                        <input type="text" id="parentName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Email</label>
+                        <input type="email" id="email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Child's Name</label>
+                        <input type="text" id="childName" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                    </div>
+                    
+                    <!-- Added identification card upload sections -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">Parent Identification Card</label>
+                        <div class="file-upload-area" id="parentIdUpload">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-sm text-gray-600 mb-2">Upload your identification card</p>
+                            <input type="file" id="parentIdFile" accept="image/*,.pdf" class="hidden" required>
+                            <button type="button" onclick="document.getElementById('parentIdFile').click()" class="text-primary hover:underline text-sm">Choose File</button>
+                            <p class="text-xs text-gray-500 mt-1">Accepted: JPG, PNG, PDF (Max 5MB)</p>
+                        </div>
+                        <div id="parentIdPreview" class="mt-2 hidden">
+                            <p class="text-sm text-green-600">✓ File uploaded successfully</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium mb-2">Child's OKU Card</label>
+                        <div class="file-upload-area" id="okuCardUpload">
+                            <svg class="w-12 h-12 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-sm text-gray-600 mb-2">Upload OKU (Disabled Person) registration card</p>
+                            <input type="file" id="okuCardFile" accept="image/*,.pdf" class="hidden" required>
+                            <button type="button" onclick="document.getElementById('okuCardFile').click()" class="text-primary hover:underline text-sm">Choose File</button>
+                            <p class="text-xs text-gray-500 mt-1">Required for autism-friendly event access</p>
+                        </div>
+                        <div id="okuCardPreview" class="mt-2 hidden">
+                            <p class="text-sm text-green-600">✓ OKU Card uploaded successfully</p>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full btn-primary py-3 px-4 rounded-lg font-medium transition-all duration-300">
+                        Create Account with IC
+                    </button>
+                </form>
+                <p class="text-center mt-4 text-sm">
+                    <button id="showLoginBtn" class="text-primary hover:underline">Already have an account? Sign in</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Updated security verification modal for email verification -->
+    <div id="securityModal" class="security-overlay hidden">
+        <div class="security-modal">
+            <h2 class="text-xl font-bold mb-4">Email Verification Required</h2>
+            <p class="text-sm text-gray-600 mb-4">To protect your child's information, please verify your email before making profile changes</p>
+            <form id="securityForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Confirm your email address</label>
+                    <input type="email" id="securityEmail" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" required>
+                </div>
+                <div class="mb-4">
+                    <button type="button" id="sendVerificationBtn" class="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors">
+                        Send Verification Code
+                    </button>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium mb-2">Enter verification code</label>
+                    <input type="text" id="verificationCode" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter 6-digit code" required>
+                    <p class="text-xs text-gray-500 mt-1">Check your email for the verification code</p>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" id="cancelSecurity" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">Cancel</button>
+                    <button type="submit" class="flex-1 btn-primary py-2 px-4 rounded-lg transition-all duration-300">Verify & Continue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <header class="bg-white/80 backdrop-blur-md shadow-sm border-b-2 border-primary">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-3">
+                         <!-- CHANGE> Added proper ThriveTogether logo with autism awareness colors -->
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 via-green-500 to-yellow-500 rounded-full flex items-center justify-center shadow-lg">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">ThriveTogether</h1>
+                            <p class="text-xs text-gray-500 -mt-1">Autism-Friendly Events</p>
+                        </div>
+                    </div>
+                    <nav class="hidden md:flex space-x-8">
+                        <button class="nav-btn font-medium px-3 py-2 border-b-3 text-primary border-primary" data-section="events">Events</button>
+                        <button class="nav-btn font-medium px-3 py-2 border-b-3 text-gray-600 hover:text-primary border-transparent" data-section="dashboard">Dashboard</button>
+                        <button class="nav-btn font-medium px-3 py-2 border-b-3 text-gray-600 hover:text-primary border-transparent" data-section="articles">Articles</button>
+                         <!-- CHANGE> Added chat navigation button -->
+                        <button class="nav-btn font-medium px-3 py-2 border-b-3 text-gray-600 hover:text-primary border-transparent" data-section="chat">Community</button>
+                        <button class="nav-btn font-medium px-3 py-2 border-b-3 text-gray-600 hover:text-primary border-transparent" data-section="profile">Profile</button>
+                    </nav>
+                    <div class="flex items-center space-x-4">
+                        <div class="hidden md:flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                                <span class="text-white text-xs font-bold">★</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700" id="userBadge">Gold Member</span>
+                        </div>
+                        <button id="logoutBtn" class="text-sm text-gray-600 hover:text-primary">Logout</button>
+                        <button class="md:hidden p-2" id="mobileMenuBtn">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="md:hidden bg-white/80 backdrop-blur-md border-b hidden">
+            <div class="px-4 py-2 space-y-2">
+                <button class="mobile-nav-btn block py-2 text-primary font-medium w-full text-left" data-section="events">Events</button>
+                <button class="mobile-nav-btn block py-2 text-gray-600 w-full text-left" data-section="dashboard">Dashboard</button>
+                <button class="mobile-nav-btn block py-2 text-gray-600 w-full text-left" data-section="articles">Articles</button>
+                 <!-- CHANGE> Added mobile chat navigation -->
+                <button class="mobile-nav-btn block py-2 text-gray-600 w-full text-left" data-section="chat">Community</button>
+                <button class="mobile-nav-btn block py-2 text-gray-600 w-full text-left" data-section="profile">Profile</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Events Section -->
+            <section id="eventsSection" class="fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Autism-Friendly Events</h2>
+                    <p class="text-gray-600 text-lg">Discover events designed specifically for children with autism and their families</p>
+                </div>
+
+                <!-- Event Filters -->
+                <div class="mb-6 flex flex-wrap gap-3">
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-primary text-white" data-filter="all">All Events</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300" data-filter="sensory">Sensory Friendly</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300" data-filter="social">Social Skills</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300" data-filter="creative">Creative Arts</button>
+                    <button class="filter-btn px-4 py-2 rounded-full text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300" data-filter="physical">Physical Activity</button>
+                </div>
+
+                <!-- Events Grid -->
+                <div id="eventsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Events will be populated by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="hidden fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Parent Dashboard</h2>
+                    <p class="text-gray-600 text-lg">Track your child's progress and upcoming events</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Child Progress Card -->
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4"><span id="childNameDisplay">Emma</span>'s Progress</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Events Attended</span>
+                                <span class="text-2xl font-bold text-primary" id="eventsAttended">12</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Current Badge Level</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-xs font-bold">★</span>
+                                    </div>
+                                    <span class="font-medium" id="currentBadge">Gold Explorer</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">Next Badge Progress</span>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-32 bg-gray-200 rounded-full h-2">
+                                        <div class="bg-primary h-2 rounded-full" style="width: 75%" id="badgeProgress"></div>
+                                    </div>
+                                    <span class="text-sm text-gray-500" id="badgeProgressText">3/4</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Events Card -->
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4">Upcoming Events</h3>
+                        <div class="space-y-3" id="upcomingEvents">
+                            <!-- Upcoming events will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Badge Collection -->
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-4">Badge Collection</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="badgeCollection">
+                        <!-- Badges will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Articles Section -->
+            <section id="articlesSection" class="hidden fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Expert Articles</h2>
+                    <p class="text-gray-600 text-lg">Educational resources from autism specialists and experts</p>
+                </div>
+
+                <div id="articlesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Articles will be populated by JavaScript -->
+                </div>
+            </section>
+
+             <!-- CHANGE> Added Community Chat Section -->
+            <section id="chatSection" class="hidden fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Parent Community</h2>
+                    <p class="text-gray-600 text-lg">Connect with other autism parents, organize playdates, and share experiences</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                     <!-- Chat Area -->
+                    <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border">
+                        <div class="p-4 border-b bg-gradient-to-r from-blue-50 to-green-50">
+                            <h3 class="text-lg font-semibold text-gray-900">General Discussion</h3>
+                            <p class="text-sm text-gray-600">Share experiences and support each other</p>
+                        </div>
+                        <div class="h-96 overflow-y-auto p-4 space-y-4" id="chatMessages">
+                             <!-- Chat messages will be populated by JavaScript -->
+                        </div>
+                        <div class="p-4 border-t">
+                            <div class="flex space-x-2">
+                                <input type="text" id="chatInput" placeholder="Type your message..." class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <button onclick="sendMessage()" class="btn-primary px-6 py-3 rounded-lg font-medium hover:bg-green-700 transition-colors">Send</button>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Sidebar -->
+                    <div class="space-y-6">
+                         <!-- Online Parents -->
+                        <div class="bg-white rounded-lg shadow-sm border p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Online Now (12)</h4>
+                            <div class="space-y-2" id="onlineParents">
+                                 <!-- Online parents will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                         <!-- Playdate Organizer -->
+                        <div class="bg-white rounded-lg shadow-sm border p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Organize Playdate</h4>
+                            <form id="playdateForm" class="space-y-3">
+                                <input type="text" placeholder="Playdate title" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="date" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                                <input type="time" class="w-full p-2 border border-gray-300 rounded-lg text-sm">
+                                <textarea placeholder="Description and location..." class="w-full p-2 border border-gray-300 rounded-lg text-sm h-20 resize-none"></textarea>
+                                <button type="submit" class="w-full btn-primary py-2 px-4 rounded-lg font-medium text-sm hover:bg-green-700 transition-colors">Create Playdate</button>
+                            </form>
+                        </div>
+
+                         <!-- Upcoming Playdates -->
+                        <div class="bg-white rounded-lg shadow-sm border p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Upcoming Playdates</h4>
+                            <div class="space-y-2" id="upcomingPlaydates">
+                                 <!-- Playdates will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Profile Section -->
+            <section id="profileSection" class="hidden fade-in">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Child Profiles</h2>
+                    <p class="text-gray-600 text-lg">Manage your children's profiles and autism spectrum details</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow-sm border p-6">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center">
+                                <span class="text-white font-bold text-xl" id="childInitial">E</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900" id="profileChildName">Emma Johnson</h3>
+                                <p class="text-gray-600">Age 8 • Diagnosed 2019</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                             <!-- CHANGE> Added autism spectrum details section -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Autism Spectrum Details</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">High-functioning</span>
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Verbal communication</span>
+                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Sensory processing</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Sensory Preferences</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Quiet environments</span>
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Soft lighting</span>
+                                    <span class="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">Tactile activities</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Interests</label>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Art & Drawing</span>
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Music</span>
+                                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Animals</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Communication Style</label>
+                                <p class="text-gray-600">Verbal with visual supports</p>
+                            </div>
+                        </div>
+
+                        <button id="editProfileBtn" class="mt-6 w-full btn-primary py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                            Edit Profile
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm border p-6 flex items-center justify-center border-dashed border-gray-300">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-gray-400 text-2xl">+</span>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">Add Another Child</h3>
+                            <p class="text-gray-600 mb-4">Create a profile for another child</p>
+                            <button class="btn-primary py-2 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                                Add Child
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Application State
+        let currentUser = null;
+        let activeSection = 'events';
+        let activeFilter = 'all';
+        let authClient = null;
+        let verificationCodeSent = false;
+        
+        // Sample Data
+        const sampleEvents = [
+            {
+                id: 1,
+                title: "Sensory-Friendly Art Workshop",
+                description: "Creative art activities in a calm, controlled environment with sensory accommodations.",
+                date: "Dec 15, 2024",
+                time: "10:00 AM - 12:00 PM",
+                type: "Creative Arts",
+                category: "creative",
+                age: "Ages 5-12",
+                enrolled: 8,
+                spots: 12,
+                image: "https://images.squarespace-cdn.com/content/v1/5e04f2158c0a456f278aac8b/95ff9047-5fa7-4ad9-9966-f67520b0b9f8/Paper-plate-jellyfish-craft-kids.jpg?height=200&width=300"
+            },      
+            {
+                id: 2,
+                title: "Social Skills Playgroup",
+                description: "Structured play activities designed to help children develop social interaction skills.",
+                date: "Dec 18, 2024",
+                time: "2:00 PM - 4:00 PM",
+                type: "Social Development",
+                category: "social",
+                age: "Ages 6-10",
+                enrolled: 6,
+                spots: 10,
+                image: "https://everydayspeech.com/wp-content/uploads/2023/05/M168.png?height=200&width=300"
+            },
+            {
+                id: 3,
+                title: "Quiet Library Story Time",
+                description: "Gentle story reading session with visual supports and sensory breaks.",
+                date: "Dec 20, 2024",
+                time: "11:00 AM - 12:00 PM",
+                type: "Educational",
+                category: "sensory",
+                age: "Ages 4-8",
+                enrolled: 5,
+                spots: 8,
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrRO9CHD5TLBhpaXGMA3LvY2Dk9Nzn9n173w&s?height=200&width=300"
+            },
+            {
+                id: 4,
+                title: "Adaptive Swimming Class",
+                description: "Swimming lessons adapted for children with autism in a supportive environment.",
+                date: "Dec 22, 2024",
+                time: "3:00 PM - 4:00 PM",
+                type: "Physical Activity",
+                category: "physical",
+                age: "Ages 7-14",
+                enrolled: 4,
+                spots: 6,
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIJKGrkRYgRuhz0MVnhr3w8lbtDC_MAVzU0w&s?height=200&width=300"
+            },
+            {
+                id: 5,
+                title: "Music Therapy Session",
+                description: "Interactive music activities to support communication and emotional expression.",
+                date: "Dec 25, 2024",
+                time: "1:00 PM - 2:30 PM",
+                type: "Therapeutic",
+                category: "sensory",
+                age: "Ages 5-12",
+                enrolled: 7,
+                spots: 10,
+                image: "https://static.wixstatic.com/media/668239_c4de115cb8844a61b1d51d294f4610c9~mv2.jpg/v1/fill/w_1024,h_684,al_c/668239_c4de115cb8844a61b1d51d294f4610c9~mv2.jpg?height=200&width=300"
+            },
+            {
+                id: 6,
+                title: "Nature Walk & Exploration",
+                description: "Guided outdoor exploration with sensory activities and nature discovery.",
+                date: "Dec 28, 2024",
+                time: "9:00 AM - 11:00 AM",
+                type: "Outdoor Activity",
+                category: "physical",
+                age: "Ages 6-12",
+                enrolled: 9,
+                spots: 15,
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYjcjt9AZS8vZMZ_d07InCzOYuO2ZoU0HCMg&s?height=200&width=300"
+            }
+        ];
+
+        const sampleArticles = [
+            {
+                id: 1,
+                title: "Understanding Sensory Processing in Autism",
+                author: "Dr. Sarah Chen, Occupational Therapist",
+                excerpt: "Learn how sensory processing differences affect daily life and practical strategies to help your child.",
+                readTime: "8 min read",
+                category: "Sensory",
+                image: "https://cdn.growtha.dev/6880a5185fab16193d5d925d/68907015fff159a963162560_66e7bb0fffaf9a53d49ecf64_6508b71ee32d40f29b8babef_Sensory%252520Processing%252520Disorder%252520vs.%252520Autism-100.jpeg?height=200&width=300"
+            },
+            {
+                id: 2,
+                title: "Building Social Skills Through Play",
+                author: "Dr. Michael Rodriguez, Child Psychologist",
+                excerpt: "Discover effective play-based interventions that naturally develop social communication skills.",
+                readTime: "6 min read",
+                category: "Social Development",
+                image: "https://www.skillpointtherapy.com/wp-content/uploads/2024/10/effective_play_therapy_approach.jpg?height=200&width=300"
+            },
+            {
+                id: 3,
+                title: "Creating Autism-Friendly Home Environments",
+                author: "Lisa Thompson, Special Education Specialist",
+                excerpt: "Simple modifications to make your home more comfortable and supportive for your autistic child.",
+                readTime: "10 min read",
+                category: "Home & Family",
+                image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS0b-e8SY-Y8GCT2goiNGBc5IVzKD1yKgkkrA&s?height=200&width=300"
+            },
+            {
+                id: 4,
+                title: "Nutrition and Autism: What Parents Should Know",
+                author: "Dr. Amanda Foster, Pediatric Nutritionist",
+                excerpt: "Evidence-based guidance on nutrition, feeding challenges, and dietary considerations.",
+                readTime: "12 min read",
+                category: "Health & Nutrition",
+                image: "https://goldencaretherapy.com/wp-content/uploads/2024/06/autism-and-diet.png?height=200&width=300"
+            },
+            {
+                id: 5,
+                title: "Preparing for School Transitions",
+                author: "Jennifer Park, Educational Advocate",
+                excerpt: "Strategies to help your child successfully navigate school changes and new environments.",
+                readTime: "9 min read",
+                category: "Education",
+                image: "https://bswh-p-001.sitecorecontenthub.cloud/api/public/content/8b34483a48d2453088b80f733065a2e2?v=7c0334f1?height=200&width=300"
+            },
+            {
+                id: 6,
+                title: "Supporting Emotional Regulation",
+                author: "Dr. Robert Kim, Behavioral Therapist",
+                excerpt: "Tools and techniques to help your child understand and manage their emotions effectively.",
+                readTime: "7 min read",
+                category: "Emotional Support",
+                image: "https://s3.gomedia.ws/wp-content/uploads/sites/72/2023/05/10171052/child-emotional-regulation-tools-Akron-OT.jpg?height=200&width=300"
+            }
+        ];
+
+        const sampleChatMessages = [
+            {
+                id: 1,
+                user: "Sarah M.",
+                message: "Hi everyone! Looking for recommendations for sensory-friendly activities in KL area.",
+                time: "2:30 PM",
+                avatar: "S"
+            },
+            {
+                id: 2,
+                user: "Ahmad R.",
+                message: "The new sensory playground at KLCC Park has been great for my son. Very autism-friendly!",
+                time: "2:35 PM",
+                avatar: "A"
+            },
+            {
+                id: 3,
+                user: "Lisa T.",
+                message: "Thanks Ahmad! We'll definitely check it out. How crowded does it get on weekends?",
+                time: "2:40 PM",
+                avatar: "L"
+            },
+            {
+                id: 4,
+                user: "Dr. Chen",
+                message: "Remember that every child is different. What works for one may not work for another. Trust your instincts as parents! 💙",
+                time: "2:45 PM",
+                avatar: "D"
+            }
+        ];
+
+        const onlineParents = [
+            { name: "Sarah M.", status: "online", avatar: "S" },
+            { name: "Ahmad R.", status: "online", avatar: "A" },
+            { name: "Lisa T.", status: "online", avatar: "L" },
+            { name: "Dr. Chen", status: "online", avatar: "D" },
+            { name: "Maria S.", status: "online", avatar: "M" },
+            { name: "David L.", status: "away", avatar: "D" }
+        ];
+
+        const upcomingPlaydates = [
+            {
+                title: "Park Playdate",
+                date: "Dec 16",
+                time: "10:00 AM",
+                organizer: "Sarah M.",
+                participants: 4
+            },
+            {
+                title: "Indoor Sensory Play",
+                date: "Dec 18",
+                time: "2:00 PM",
+                organizer: "Ahmad R.",
+                participants: 6
+            }
+        ];
+
+        // Initialize IC Authentication
+        async function initAuth() {
+            try {
+                // In a real implementation, you would use the actual IC auth client
+                // For demo purposes, we'll simulate the authentication flow
+                console.log('Initializing IC Authentication...');
+                
+                // Check if user is already authenticated
+                const savedUser = localStorage.getItem('thriveTogetherUser');
+                if (savedUser) {
+                    currentUser = JSON.parse(savedUser);
+                    showMainApp();
+                } else {
+                    showAuthModal();
+                }
+            } catch (error) {
+                console.error('Auth initialization failed:', error);
+                showAuthModal();
+            }
+        }
+
+        // Authentication Functions
+        function showAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        function hideAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function showMainApp() {
+            hideAuthModal();
+            document.getElementById('mainApp').classList.remove('hidden');
+            updateUserInterface();
+            renderEvents();
+            renderArticles();
+            renderDashboard();
+            renderChatMessages();
+            renderOnlineParents();
+            renderUpcomingPlaydates();
+        }
+
+        function updateUserInterface() {
+            if (currentUser) {
+                document.getElementById('childNameDisplay').textContent = currentUser.childName || 'Emma';
+                document.getElementById('profileChildName').textContent = `${currentUser.childName || 'Emma'} ${currentUser.parentName?.split(' ')[1] || 'Johnson'}`;
+                document.getElementById('childInitial').textContent = (currentUser.childName || 'Emma')[0].toUpperCase();
+            }
+        }
+
+        // IC Login Simulation
+        async function handleICLogin() {
+            try {
+                // Simulate IC authentication process
+                const mockUser = {
+                    id: 'ic_user_' + Date.now(),
+                    parentName: 'Parent User',
+                    childName: 'Emma',
+                    email: 'parent@example.com',
+                    icPrincipal: 'mock_principal_id',
+                    eventsAttended: 12,
+                    badgeLevel: 'Gold Explorer'
+                };
+                
+                currentUser = mockUser;
+                localStorage.setItem('thriveTogetherUser', JSON.stringify(currentUser));
+                showMainApp();
+                
+                alert('Successfully signed in with Internet Computer Identity!');
+            } catch (error) {
+                console.error('IC Login failed:', error);
+                alert('Login failed. Please try again.');
+            }
+        }
+
+        function handleSignup(event) {
+            event.preventDefault();
+            
+            const parentName = document.getElementById('parentName').value;
+            const email = document.getElementById('email').value;
+            const childName = document.getElementById('childName').value;
+            const parentIdFile = document.getElementById('parentIdFile').files[0];
+            const okuCardFile = document.getElementById('okuCardFile').files[0];
+            
+            if (!parentName || !email || !childName) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (!parentIdFile || !okuCardFile) {
+                alert('Please upload both identification documents');
+                return;
+            }
+            
+            // Simulate document verification process
+            alert('Verifying documents... This may take a few moments.');
+            
+            setTimeout(() => {
+                // Simulate account creation with IC
+                const newUser = {
+                    id: 'ic_user_' + Date.now(),
+                    parentName,
+                    email,
+                    childName,
+                    icPrincipal: 'mock_principal_' + Date.now(),
+                    eventsAttended: 0,
+                    badgeLevel: 'New Member',
+                    documentsVerified: true,
+                    parentIdVerified: true,
+                    okuCardVerified: true
+                };
+                
+                currentUser = newUser;
+                localStorage.setItem('thriveTogetherUser', JSON.stringify(currentUser));
+                showMainApp();
+                
+                alert('Account created successfully! Your documents have been verified and you now have access to autism-friendly events.');
+            }, 2000);
+        }
+
+        function showSecurityModal() {
+            document.getElementById('securityModal').classList.remove('hidden');
+            // Pre-fill email if available
+            if (currentUser?.email) {
+                document.getElementById('securityEmail').value = currentUser.email;
+            }
+        }
+
+        function hideSecurityModal() {
+            document.getElementById('securityModal').classList.add('hidden');
+            verificationCodeSent = false;
+        }
+
+        function sendVerificationCode() {
+            const email = document.getElementById('securityEmail').value;
+            if (!email) {
+                alert('Please enter your email address');
+                return;
+            }
+            
+            // Simulate sending verification code
+            alert(`Verification code sent to ${email}. Please check your email.`);
+            verificationCodeSent = true;
+            
+            // For demo purposes, show the code in console
+            console.log('Demo verification code: 123456');
+        }
+
+        function handleSecurityVerification(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('securityEmail').value;
+            const code = document.getElementById('verificationCode').value;
+            
+            if (!email || !code) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            if (!verificationCodeSent) {
+                alert('Please send verification code first');
+                return;
+            }
+            
+            // Simulate verification
+            if (email === currentUser?.email && code === '123456') {
+                hideSecurityModal();
+                alert('Email verified successfully! You can now edit your profile.');
+                // Enable profile editing here
+                enableProfileEditing();
+            } else {
+                alert('Verification failed. Please check your email and code.');
+            }
+        }
+
+        function enableProfileEditing() {
+            // This would enable profile editing functionality
+            console.log('Profile editing enabled');
+        }
+
+        // Navigation Functions
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('main section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+                btn.classList.remove('text-primary', 'border-primary');
+                btn.classList.add('text-gray-600', 'border-transparent');
+            });
+            
+            document.querySelectorAll(`[data-section="${sectionName}"]`).forEach(btn => {
+                btn.classList.remove('text-gray-600', 'border-transparent');
+                btn.classList.add('text-primary', 'border-primary');
+            });
+            
+            activeSection = sectionName;
+            
+            // Hide mobile menu
+            document.getElementById('mobileMenu').classList.add('hidden');
+        }
+
+        // Event Functions
+        function renderEvents() {
+            const eventsGrid = document.getElementById('eventsGrid');
+            const filteredEvents = activeFilter === 'all' ? sampleEvents : sampleEvents.filter(event => event.category === activeFilter);
+            
+            eventsGrid.innerHTML = filteredEvents.map(event => `
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow hover:-translate-y-1">
+                     <!-- CHANGE> Updated to use actual event images -->
+                    <img src="${event.image}" alt="${event.title}" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">${event.type}</span>
+                            <span class="text-xs text-gray-500">${event.age}</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${event.title}</h3>
+                        <p class="text-gray-600 text-sm mb-4">${event.description}</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span>${event.date}</span>
+                            <span>${event.time}</span>
+                        </div>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-sm text-gray-600">${event.enrolled}/${event.spots} enrolled</span>
+                            <div class="w-24 bg-gray-200 rounded-full h-2">
+                                <div class="bg-secondary h-2 rounded-full" style="width: ${(event.enrolled / event.spots) * 100}%"></div>
+                            </div>
+                        </div>
+                        <button onclick="enrollInEvent(${event.id})" class="w-full btn-primary py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                            Enroll Now
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterEvents(category) {
+            activeFilter = category;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-primary', 'text-white');
+                btn.classList.add('bg-gray-200', 'text-gray-700');
+            });
+            
+            document.querySelector(`[data-filter="${category}"]`).classList.remove('bg-gray-200', 'text-gray-700');
+            document.querySelector(`[data-filter="${category}"]`).classList.add('bg-primary', 'text-white');
+            
+            renderEvents();
+        }
+
+        function enrollInEvent(eventId) {
+            const event = sampleEvents.find(e => e.id === eventId);
+            if (event && event.enrolled < event.spots) {
+                event.enrolled++;
+                renderEvents();
+                
+                // Update user progress
+                if (currentUser) {
+                    currentUser.eventsAttended = (currentUser.eventsAttended || 0) + 1;
+                    localStorage.setItem('thriveTogetherUser', JSON.stringify(currentUser));
+                    updateUserInterface();
+                    renderDashboard();
+                }
+                
+                alert(`Successfully enrolled in "${event.title}"! You'll receive a confirmation email shortly.`);
+            } else {
+                alert('Sorry, this event is full or unavailable.');
+            }
+        }
+
+        // Article Functions
+        function renderArticles() {
+            const articlesGrid = document.getElementById('articlesGrid');
+            articlesGrid.innerHTML = sampleArticles.map(article => `
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow hover:-translate-y-1">
+                     <!-- CHANGE> Updated to use actual article images -->
+                    <img src="${article.image}" alt="${article.title}" class="w-full h-48 object-cover">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-primary uppercase tracking-wide">${article.category}</span>
+                            <span class="text-xs text-gray-500">${article.readTime}</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">${article.title}</h3>
+                        <p class="text-gray-600 text-sm mb-4">${article.excerpt}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">${article.author}</span>
+                            <button class="text-primary hover:text-green-700 text-sm font-medium">Read More</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderChatMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = sampleChatMessages.map(msg => `
+                <div class="flex space-x-3">
+                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white text-sm font-medium">${msg.avatar}</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="font-medium text-gray-900 text-sm">${msg.user}</span>
+                            <span class="text-xs text-gray-500">${msg.time}</span>
+                        </div>
+                        <p class="text-gray-700 text-sm">${msg.message}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function renderOnlineParents() {
+            const onlineParentsDiv = document.getElementById('onlineParents');
+            onlineParentsDiv.innerHTML = onlineParents.map(parent => `
+                <div class="flex items-center space-x-2">
+                    <div class="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                        <span class="text-white text-xs font-medium">${parent.avatar}</span>
+                    </div>
+                    <span class="text-sm text-gray-700">${parent.name}</span>
+                    <div class="w-2 h-2 ${parent.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'} rounded-full"></div>
+                </div>
+            `).join('');
+        }
+
+        function renderUpcomingPlaydates() {
+            const playdatesDiv = document.getElementById('upcomingPlaydates');
+            playdatesDiv.innerHTML = upcomingPlaydates.map(playdate => `
+                <div class="p-3 bg-gray-50 rounded-lg">
+                    <h5 class="font-medium text-gray-900 text-sm">${playdate.title}</h5>
+                    <p class="text-xs text-gray-600">${playdate.date} at ${playdate.time}</p>
+                    <p class="text-xs text-gray-500">by ${playdate.organizer} • ${playdate.participants} joining</p>
+                </div>
+            `).join('');
+        }
+
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (message) {
+                const newMessage = {
+                    id: sampleChatMessages.length + 1,
+                    user: currentUser?.parentName || 'You',
+                    message: message,
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    avatar: (currentUser?.parentName || 'You')[0].toUpperCase()
+                };
+                
+                sampleChatMessages.push(newMessage);
+                renderChatMessages();
+                chatInput.value = '';
+            }
+        }
+
+        // Handle playdate form submission
+        function handlePlaydateSubmission(event) {
+            event.preventDefault();
+            alert('Playdate created successfully! Other parents will be notified.');
+            event.target.reset();
+        }
+
+        // Dashboard Functions
+        function renderDashboard() {
+            // Update progress stats
+            document.getElementById('eventsAttended').textContent = currentUser?.eventsAttended || 12;
+            document.getElementById('currentBadge').textContent = currentUser?.badgeLevel || 'Gold Explorer';
+            
+            // Render upcoming events
+            const upcomingEvents = document.getElementById('upcomingEvents');
+            upcomingEvents.innerHTML = `
+                <div class="border-l-4 border-secondary pl-3">
+                    <p class="font-medium text-gray-900">Art Therapy Session</p>
+                    <p class="text-sm text-gray-600">Tomorrow, 2:00 PM</p>
+                </div>
+                <div class="border-l-4 border-primary pl-3">
+                    <p class="font-medium text-gray-900">Social Skills Workshop</p>
+                    <p class="text-sm text-gray-600">Friday, 10:00 AM</p>
+                </div>
+            `;
+            
+            // Render badge collection
+            const badgeCollection = document.getElementById('badgeCollection');
+            const badges = [
+                { name: 'First Steps', description: 'Attended first event', earned: true, color: 'from-amber-600 to-amber-800' },
+                { name: 'Social Butterfly', description: '5 social events', earned: true, color: 'from-gray-400 to-gray-600' },
+                { name: 'Creative Artist', description: '10 art sessions', earned: true, color: 'from-yellow-400 to-yellow-600' },
+                { name: 'Champion', description: '20 events total', earned: false, color: 'from-gray-300 to-gray-500' }
+            ];
+            
+            badgeCollection.innerHTML = badges.map(badge => `
+                <div class="text-center p-4 bg-gray-50 rounded-lg ${!badge.earned ? 'opacity-50' : ''}">
+                    <div class="w-16 h-16 bg-gradient-to-br ${badge.color} rounded-full flex items-center justify-center mx-auto mb-2">
+                        <span class="text-white font-bold text-xl">★</span>
+                    </div>
+                    <p class="font-medium text-gray-900">${badge.name}</p>
+                    <p class="text-xs text-gray-600">${badge.description}</p>
+                </div>
+            `).join('');
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize authentication
+            initAuth();
+            
+            renderChatMessages();
+            renderOnlineParents();
+            renderUpcomingPlaydates();
+            
+            // Auth modal event listeners
+            document.getElementById('icLoginBtn').addEventListener('click', handleICLogin);
+            document.getElementById('signupFormData').addEventListener('submit', handleSignup);
+            
+            document.getElementById('showSignupBtn').addEventListener('click', function() {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('signupForm').classList.remove('hidden');
+            });
+            
+            document.getElementById('showLoginBtn').addEventListener('click', function() {
+                document.getElementById('signupForm').classList.add('hidden');
+                document.getElementById('loginForm').classList.remove('hidden');
+            });
+            
+            document.getElementById('parentIdFile').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    document.getElementById('parentIdPreview').classList.remove('hidden');
+                }
+            });
+            
+            document.getElementById('okuCardFile').addEventListener('change', function(e) {
+                if (e.target.files[0]) {
+                    document.getElementById('okuCardPreview').classList.remove('hidden');
+                }
+            });
+            
+            // Security modal event listeners
+            document.getElementById('editProfileBtn').addEventListener('click', showSecurityModal);
+            document.getElementById('securityForm').addEventListener('submit', handleSecurityVerification);
+            document.getElementById('cancelSecurity').addEventListener('click', hideSecurityModal);
+            document.getElementById('sendVerificationBtn').addEventListener('click', sendVerificationCode);
+            
+            // Navigation event listeners
+            document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    showSection(this.dataset.section);
+                });
+            });
+            
+            // Filter event listeners
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterEvents(this.dataset.filter);
+                });
+            });
+            
+            // Mobile menu toggle
+            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+                const mobileMenu = document.getElementById('mobileMenu');
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // Logout
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('thriveTogetherUser');
+                currentUser = null;
+                showAuthModal();
+            });
+            
+            // Added chat event listeners
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            
+            document.getElementById('playdateForm').addEventListener('submit', handlePlaydateSubmission);
+        });
+    </script>
+</body>
+</html>
